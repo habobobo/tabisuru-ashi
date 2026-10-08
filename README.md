@@ -1,10 +1,11 @@
 # tabisuru-ashi
 
-中国城市足迹地图：记录游玩、住宿、居住经历以及对应时间。391 个地图单元，每个获邀账号拥有独立足迹，可按邮箱授权朋友只读查看，并撤销授权。
+中国城市足迹地图：记录经过、游玩、住宿、居住经历以及对应时间。391 个地图单元，每个获邀账号拥有独立足迹，可按邮箱授权朋友只读查看，并撤销授权。
 
 ## 已实现
 
 - 地图点击、城市搜索、省份筛选、缩放；每座城市可添加多段经历。
+- 四种经历独立记录和筛选：经过 2 分、游玩 3 分、住宿 4 分、居住 5 分；同一城市按最高经历着色和计分。
 - 年、月、日三种时间精度，开始与结束时间、持续至今、备注。
 - 云端保存、编辑、删除；按年份筛选、时间线、PNG 导出、JSON 备份。
 - 独立邮箱账号登录，网站访问名单、按地图分别授权，数据库行级权限。
@@ -14,7 +15,7 @@ GitHub 只保存程序和地图，不保存旅行记录、邮箱名单或密码�
 ## 部署到你的账号
 
 1. 在 GitHub 创建 `tabisuru-ashi` **Private** 仓库，并允许 GitHub 连接访问该仓库。
-2. 在 Supabase 创建项目。将 `supabase/migrations/202610070001_initial.sql` 的完整内容在 SQL Editor 执行一次。
+2. 在 Supabase 创建项目。按文件名顺序执行 `supabase/migrations/` 中的 SQL：先执行 `202610070001_initial.sql`，再执行 `202610090001_add_pass.sql`。已初始化的项目只需执行后一个升级文件，它保留现有记录和访问权限。
 3. 在 Authentication → Settings 关闭开放注册（Allow new users to sign up）；在 Authentication → Users → Add user → Create new user 创建你的邮箱账号，设置一个独立密码并确认邮箱。密码不要提交到仓库。
 4. 在 SQL Editor 添加网站访问名单，将示例邮箱换成你的邮箱：
 
@@ -60,7 +61,7 @@ npm run dev
 
 地图来源：[DataV.GeoAtlas](https://geo.datav.aliyun.com/areas_v3/bound/) 与 [Taiwan-GeoJSON](https://github.com/titaneric/Taiwan-GeoJSON)。本地静态地图不需要 API 密钥。
 
-地图按最高经历着色，各地区最高计分一次：游玩 3 分、住宿 4 分、居住 5 分。三类城市统计可以重叠。JSON 备份为导出功能，当前没有批量恢复导入功能。
+地图按最高经历着色，各地区最高计分一次：经过 2 分、游玩 3 分、住宿 4 分、居住 5 分。四类城市统计可以重叠。JSON 备份为导出功能，当前没有批量恢复导入功能。
 
 ## 发布状态
 

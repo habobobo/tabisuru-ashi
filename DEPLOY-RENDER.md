@@ -4,7 +4,7 @@ Render 可以运行现有 Next.js 服务。代码、登录、记录和好友分�
 
 ## 准备数据库
 
-1. 在 Supabase 创建项目，并在 SQL Editor 执行 `supabase/migrations/202610070001_initial.sql`。
+1. 在 Supabase 创建项目，并在 SQL Editor 按文件名顺序执行 `supabase/migrations/` 中的 SQL。已有项目只需执行新增升级文件；`202610090001_add_pass.sql` 增加「经过」类型并保留现有记录和访问权限。
 2. 在 Authentication 中关闭开放注册，创建并确认你的邮箱账号。自行设置密码，不要把密码发到聊天或仓库。
 3. 在 SQL Editor 把你的登录邮箱加入 `public.allowed_users`，参考 README 中的 SQL。
 4. 获取项目 URL 和 publishable key。不要使用 secret 或 service_role key。
