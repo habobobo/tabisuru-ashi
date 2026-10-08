@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {PGlite} from '@electric-sql/pglite';
 
-test('actual PostgreSQL: account isolation, sharing, revocation and persisted dates',async()=>{
+test('actual PostgreSQL: additive pass migration, isolation, sharing and persisted dates',async()=>{
   const db=new PGlite();
   await db.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);
     create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb $$;
@@ -17,11 +17,12 @@ test('actual PostgreSQL: account isolation, sharing, revocation and persisted da
   const rows=async(q,params=[]) => (await db.query(q,params)).rows;
   for(const u of ['owner','viewer','other'])await asUser(u,()=>db.query('insert into public.profiles(id,name) values($1,$2)',[users[u][0],u]));
   const note="'; DROP TABLE experiences; --";
-  let visit;
+  let visit,pass;
   await asUser('owner',async()=>{
     visit=(await rows("insert into public.experiences(city_id,kind,start_date,end_date,note) values('110000','visit','2026-10-01','2026-10-04',$1) returning *",[note]))[0];
     await db.query("insert into public.experiences(city_id,kind,start_date) values('110000','stay','2026-10')");
     await db.query("insert into public.experiences(city_id,kind,start_date,ongoing) values('110000','live','2018',true)");
+    await assert.rejects(db.query("insert into public.experiences(city_id,kind) values('110000','pass')"));
     assert.equal((await rows('select * from public.experiences')).length,3);
     assert.equal((await rows('select note from public.experiences where id=$1',[visit.id]))[0].note,note);
     await assert.rejects(db.query("insert into public.experiences(city_id,kind,start_date) values('110000','visit','2026-02-30')"));
@@ -31,14 +32,25 @@ test('actual PostgreSQL: account isolation, sharing, revocation and persisted da
     await assert.rejects(db.query("insert into public.experiences(city_id,kind,note) values('110000','visit',repeat('a',1001))"));
     await assert.rejects(db.query("insert into public.experiences(owner_id,city_id,kind) values($1,'110000','visit')",[users.other[0]]));
   });
+  await db.exec(await readFile(new URL('../supabase/migrations/202610090001_add_pass.sql',import.meta.url),'utf8'));
+  await asUser('owner',async()=>{
+    pass=(await rows("insert into public.experiences(city_id,kind,start_date,end_date) values('310000','pass','2026-10-01','2026-10-02') returning *"))[0];
+    assert.equal(pass.kind,'pass');
+    assert.equal(pass.start_date,'2026-10-01');
+    assert.equal((await rows('select * from public.experiences')).length,4);
+    assert.equal((await rows('select note from public.experiences where id=$1',[visit.id]))[0].note,note);
+    await assert.rejects(db.query("insert into public.experiences(city_id,kind) values('110000','unknown')"));
+    await assert.rejects(db.query("insert into public.experiences(city_id,kind,start_date) values('310000','pass','2026-02-30')"));
+  });
   await asUser('other',async()=>{assert.equal((await rows('select * from public.experiences')).length,0);assert.equal((await rows('select * from public.profiles')).length,1);});
   await asUser('viewer',async()=>{assert.equal((await rows('select * from public.experiences')).length,0);});
   await asUser('owner',()=>db.query('insert into public.shares(viewer_email) values($1)',[users.viewer[1]]));
   await asUser('viewer',async()=>{
-    assert.equal((await rows('select * from public.experiences')).length,3);
+    assert.equal((await rows('select * from public.experiences')).length,4);
     assert.equal((await rows('select * from public.profiles')).length,2);
     assert.equal((await rows('update public.experiences set note=$1 where id=$2 returning id',['hacked',visit.id])).length,0);
     assert.equal((await rows('delete from public.experiences where id=$1 returning id',[visit.id])).length,0);
+    assert.equal((await rows('update public.experiences set kind=$1 where id=$2 returning id',['visit',pass.id])).length,0);
     assert.equal((await rows('delete from public.shares returning id')).length,0);
     await assert.rejects(db.query('update public.shares set viewer_email=$1',[users.other[1]]));
     await assert.rejects(db.query('select * from public.allowed_users'));
@@ -54,7 +66,9 @@ test('actual PostgreSQL: account isolation, sharing, revocation and persisted da
   await asUser('owner',async()=>{
     await db.query('update public.experiences set end_date=$1 where id=$2',['2026-10-05',visit.id]);
     assert.equal((await rows('select end_date from public.experiences where id=$1',[visit.id]))[0].end_date,'2026-10-05');
-    await db.query('delete from public.experiences where id=$1',[visit.id]);assert.equal((await rows('select * from public.experiences')).length,2);
+    await db.query('update public.experiences set end_date=$1 where id=$2',['2026-10-03',pass.id]);
+    assert.equal((await rows('select end_date from public.experiences where id=$1',[pass.id]))[0].end_date,'2026-10-03');
+    await db.query('delete from public.experiences where id=$1',[visit.id]);assert.equal((await rows('select * from public.experiences')).length,3);
   });
   // Revoking site access takes effect even while an authenticated token remains valid.
   await db.query('delete from public.allowed_users where email=$1',[users.owner[1]]);
