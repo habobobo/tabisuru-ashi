@@ -3,7 +3,7 @@ export type Experience={id:string;cityId:string;kind:Kind;startDate:string;endDa
 export type City={id:string;name:string;province:string;path:string;center:number[];bounds:number[]};
 export type Province={id:string;name:string;path:string;center:number[]};
 export type MapData={cities:City[];provinces:Province[];inset:{path:string;id:string;name:string}[];width:number;height:number;source:string;retrieved:string};
-export const kinds={pass:{label:'经过',pastLabel:'经过',color:'#77a9cf',level:2},visit:{label:'游玩',pastLabel:'游玩过',color:'#38a99e',level:3},stay:{label:'住宿',pastLabel:'住宿过',color:'#f1b34c',level:4},live:{label:'居住',pastLabel:'居住过',color:'#e77767',level:5}};
+export const kinds={pass:{label:'经过',pastLabel:'经过',color:'#667b86',level:2},visit:{label:'游玩',pastLabel:'游玩过',color:'#ad593f',level:3},stay:{label:'住宿',pastLabel:'住宿过',color:'#9b772d',level:4},live:{label:'居住',pastLabel:'居住过',color:'#536b55',level:5}};
 export function validPartialDate(v:unknown):v is string{if(typeof v!=='string')return false;if(v==='')return true;if(!/^\d{4}(-\d{2})?(-\d{2})?$/.test(v))return false;const [y,m,d]=v.split('-').map(Number);return y>=1900&&y<=2100&&(m===undefined||(m>=1&&m<=12))&&(d===undefined||(d>=1&&d<=new Date(Date.UTC(y,m,0)).getUTCDate()));}
 export function earliest(v:string){return v.length===4?v+'-01-01':v.length===7?v+'-01':v;}
 export function latest(v:string){if(v.length===4)return v+'-12-31';if(v.length===7){const[y,m]=v.split('-').map(Number);return v+'-'+new Date(Date.UTC(y,m,0)).getUTCDate();}return v;}
